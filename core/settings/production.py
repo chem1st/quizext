@@ -37,7 +37,7 @@ if not settings.DEBUG:
         'django.contrib.sessions',
         'django.contrib.messages',
         'django.contrib.staticfiles',
-        'core',
+        'quizext',
     )
 
     MIDDLEWARE_CLASSES = (
@@ -51,7 +51,7 @@ if not settings.DEBUG:
         'django.middleware.security.SecurityMiddleware',
     )
 
-    ROOT_URLCONF = 'quizext.urls'
+    ROOT_URLCONF = 'core.urls'
 
     TEMPLATES = [
         {
@@ -69,7 +69,7 @@ if not settings.DEBUG:
         },
     ]
 
-    WSGI_APPLICATION = 'quizext.wsgi.application'
+    WSGI_APPLICATION = 'core.wsgi.application'
 
 
     DATABASES = {
