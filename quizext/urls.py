@@ -1,4 +1,4 @@
-"""core URL Configuration
+"""quizext URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.8/topics/http/urls/
@@ -13,17 +13,12 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.conf import settings
 from django.conf.urls import include, url
-from django.conf.urls.static import static
-from django.contrib import admin
-import quizext.urls
+from .views import TestList, TestDetail, QuestionFormView
 
 
 urlpatterns = [
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^q/', include(quizext.urls)),
+    url(r'^tests/$', TestList.as_view(), name='tests'),
+    url(r'^tests/(?P<pk>[0-9]+)/$', TestDetail.as_view(), name='test_confirm'),
+    url(r'^tests/(?P<pk>[0-9]+)/question/(?P<q_set>[0-9]+)/$', QuestionFormView.as_view(), name='question')
 ]
-
-if settings.DEBUG:
-	urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
