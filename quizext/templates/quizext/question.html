@@ -2,7 +2,14 @@
 
 
 {% block content %}
-	
-	{{ form }}
+	<p>Вопрос № {{ question.group }}</p>
+	<p>{{ question.content }}</p>
+	<ul>
+		{% for ans in question.answer_set.all %}
+			<li>{{ ans.content }}</li>
+		{% endfor %}
+	</ul>
+	<p><a href="#" class="btn">Следующий вопрос</a>
+	<a href="#" class="btn">Пропустить</a></p>
 
 {% endblock %}

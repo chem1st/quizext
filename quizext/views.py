@@ -22,10 +22,7 @@ class TestDetail(DetailView):
 		return context
 
 
-class QuestionFormView(FormView):
-	form_class = QuestionForm
+class QuestionDetail(DetailView):
+	model = Question
+	context_object_name = 'question'
 	template_name = 'quizext/question.html'
-	success_url = reverse_lazy('question')
-
-	def form_valid(self, form):
-		return super(QuestionFormView, self).form_valid(form)
