@@ -22,7 +22,7 @@ class TestDetail(DetailView):
 		return context
 
 
-class QuestionDetail(DetailView):
-	model = Question
-	context_object_name = 'question'
-	template_name = 'quizext/question.html'
+def question(request, pk, q_set):
+	q = Question.objects.get(pk=pk)
+	c = {'question': q, }
+	return render(request, 'quizext/question.html', c)

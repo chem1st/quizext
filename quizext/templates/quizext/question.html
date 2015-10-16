@@ -4,11 +4,11 @@
 {% block content %}
 	<p>Вопрос № {{ question.group }}</p>
 	<p>{{ question.content }}</p>
-	<ul>
+	<form>
 		{% for ans in question.answer_set.all %}
-			<li>{{ ans.content }}</li>
+			<input type="checkbox" /><li>{{ ans.content }}</li>
 		{% endfor %}
-	</ul>
+	</form>
 	<p><a href="#" class="btn">Следующий вопрос</a>
 	<a href="#" class="btn">Пропустить</a></p>
 
