@@ -2,14 +2,23 @@
 
 
 {% block content %}
+
+	{% if user.is_authenticated %}
+		<h3>Авторизован {{ user }}</h3>
+	{% endif %}
+	<p><em>Предыдущий вопрос: {{ response }}</em></p>
 	<p>Вопрос № {{ question.group }}</p>
 	<p>{{ question.content }}</p>
-	<form>
+	<form method="POST" action="{% url 'question' pk=question.test.pk q_set=next %}">
+	{% csrf_token %}
+		<input type="hidden" name="q_pk" value="{{ question.id }}"/>
 		{% for ans in question.answer_set.all %}
-			<input type="checkbox" /><li>{{ ans.content }}</li>
+			<p><input type="checkbox" name="answer" value="{{ ans.id }}"/>{{ ans.content }}</p>
 		{% endfor %}
+		<button class="btn" type="submit">Ответить</button>
 	</form>
-	<p><a href="#" class="btn">Следующий вопрос</a>
-	<a href="#" class="btn">Пропустить</a></p>
+	<p>
+		<a href="{% url 'question' pk=question.test.pk q_set=next %}" class="btn">Пропустить</a>
+	</p>
 
 {% endblock %}

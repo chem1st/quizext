@@ -11,6 +11,7 @@ class AnswerInline(admin.StackedInline):
 
 class QuestionAdmin(admin.ModelAdmin):
 	list_display = ['__unicode__', 'test', 'group']
+	list_filter = ['test', 'group']
 	inlines = [
 		AnswerInline,
 	]
