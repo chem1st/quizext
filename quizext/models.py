@@ -51,8 +51,8 @@ class Attempt(models.Model):
 	user = models.ForeignKey(User, verbose_name="Пользователь")
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	number = models.PositiveIntegerField(u'Номер попытки')
-	questions = models.CharField(u'Вопросы', max_length=500)
-	checked = models.CharField(u'Ответы', max_length=500)
+	questions = models.CharField(u'Вопросы', max_length=500, blank=True)
+	checked = models.CharField(u'Ответы', max_length=500, blank=True)
 
 	def set_json(self, field, x):
 		self.field = json.dumps(x)
@@ -61,4 +61,4 @@ class Attempt(models.Model):
 		return json.loads(self.field)
 
 	def __unicode__(self):
-		return "%s - %s (%s)" % (self.test, self.user, self.number)
+		return u"%s - %s (попытка №%s)" % (self.test.title, self.user.username, self.number)

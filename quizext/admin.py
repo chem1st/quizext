@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Test, Question, Answer
+from .models import Test, Question, Answer, Attempt
 
 
 class HideModel(admin.ModelAdmin):
@@ -27,3 +27,4 @@ class TestAdmin(admin.ModelAdmin):
 admin.site.register(Test, TestAdmin)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(Answer, HideModel)
+admin.site.register(Attempt)

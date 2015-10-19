@@ -8,14 +8,17 @@
 	<p>Количество вопросов: {{ q_num }}</p>
 	<p>Максимальное кол-во баллов: {{ sum }}</p>
 	<p>Время на выполнение всех заданий: {{ time }} ч.</p>
-	{% if test.max_attempts == 1 %}
-		<p>Внимание!!! Данный тест можно пройти только один раз!</p>
-	{% else %}
-		<p>У Вас осталось {{ test.max_attempts }} попыток для прохождения теста.</p>
-		<p>Вы проходили данный тест {{ user.attempt.number }} раз</p>
-	{% endif %}
+	<p>Внимание!!! Данный тест можно пройти только один раз!</p>
+	<p>Вы проходили данный тест {{ user_attempts }} раз</p>
 	<p>Набранное кол-во баллов: n</p>
-	<p>Вы хотите пройти тест?</p>
-	<a href="{% url 'question' pk=test.pk q_set=1 %}" class="btn">Да, хочу пройти.</a>
+	{% if user_attempts < test.max_attempts %}
+		<p>У Вас осталось {{ test.max_attempts }} попыток для прохождения теста.</p>
+		<p>Вы хотите пройти тест?</p>
+		<form method="POST" action="{% url 'question' pk=test.pk q_set=1 %}">{% csrf_token %}
+			<button class="btn">Да, хочу пройти</button>
+		</form>
+	{% else %}
+		<p>У Вас не осталось попыток!</p>
+	{% endif %}
 
 {% endblock %}

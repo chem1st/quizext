@@ -1,0 +1,18 @@
+{% extends 'quizext/quizext_base.html' %}
+
+
+{% block content %}
+	
+	<h1>{{ test.title }}</h1>
+	<p>Отвечено вопросов: из {{ q_num }}</p>
+	<p>Набранное кол-во баллов: из {{ sum }}</p>
+	<p>Попытка №{{ user_attempts }}</p>
+	{% if user_attempts < test.max_attempts %}
+		<p>У Вас осталось {{ test.max_attempts }} попыток для прохождения теста.</p>
+		<p>Вы хотите пройти тест еще раз?</p>
+		<a href="{% url 'question' pk=test.pk q_set=1 %}" class="btn">Да, хочу пройти.</a>
+	{% else %}
+		<p>Спасибо за прохождение теста!</p>
+	{% endif %}
+
+{% endblock %}
