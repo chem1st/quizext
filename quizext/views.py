@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.views.generic import ListView, DetailView
 from .models import Test, Question, Answer, Attempt
 from .forms import QuestionForm
+import json
 
 
 class TestList(ListView):
@@ -24,7 +25,11 @@ class TestDetail(DetailView):
 		context['sum'] = q.aggregate(Sum('points')).values()[0]
 		context['time'] = Test.objects.filter(pk=self.kwargs['pk']).values_list('time', 
 			flat=True)[0]/3600
-		context['user_attempts'] = Attempt.objects.filter(user=self.request.user, test__pk=self.kwargs['pk']).count()
+		user_attempts = Attempt.objects.filter(user=self.request.user, 
+			test__pk=self.kwargs['pk']).count()
+		max_attempts = Test.objects.get(pk=self.kwargs['pk']).max_attempts
+		context['user_attempts'] = user_attempts
+		context['delta_attempts'] = max_attempts - user_attempts
 		return context
 
 
@@ -38,16 +43,31 @@ def question(request, pk, q_set):
 			test = Test.objects.get(pk=pk)
 			attempt = Attempt(user=request.user, test=test, number=attempt_count)
 			attempt.save()
+			c['attempt_count'] = attempt_count
 		else:
+			attempt = Attempt.objects.get(user=request.user, test__pk=pk, 
+				number=request.POST.get('attempt_count'))
 			ca = Answer.objects.filter(question__pk=request.POST.get('q_pk'), 
 				is_correct=True).values_list('id', flat=True)
 			ra = request.POST.getlist('answer')
+			prev = int(q_set)-1
+			try:
+				answers = attempt.get_json()
+			except ValueError:
+				answers = {}
+			answers[prev] = ra
+			attempt.set_json(answers)
+			attempt.save()
 			if map(int, ca) == map(int, ra):
 				response = True
-			c['response'] = response
+				c['response'] = response
+			c.update({'attempt_count': request.POST.get('attempt_count'), 'answers': answers})
 	return render(request, 'quizext/question.html', c)
 
 
 def results(request, pk):
-	c = {}
+	attempt = Attempt.objects.get(user=request.user, test__pk=pk, 
+				number=request.POST.get('attempt_count'))
+	answers = attempt.get_json()
+	c = {'answers': answers,}
 	return render(request, 'quizext/results.html', c)

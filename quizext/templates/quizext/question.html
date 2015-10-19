@@ -6,6 +6,7 @@
 	{% if user.is_authenticated %}
 		<h3>Авторизован {{ user }}</h3>
 	{% endif %}
+	{{ answers }}
 	<p><em>Предыдущий вопрос: {{ response }}</em></p>
 	<p>Вопрос № {{ question.group }}</p>
 	<p>{{ question.content }}</p>
@@ -16,6 +17,7 @@
 	{% endif %}
 	{% csrf_token %}
 		<input type="hidden" name="q_pk" value="{{ question.id }}"/>
+		<input type="hidden" name="attempt_count" value="{{ attempt_count }}"/>
 		{% for ans in question.answer_set.all %}
 			<p><input type="checkbox" name="answer" value="{{ ans.id }}"/>{{ ans.content }}</p>
 		{% endfor %}
