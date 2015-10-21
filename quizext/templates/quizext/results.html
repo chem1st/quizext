@@ -3,11 +3,11 @@
 
 {% block content %}
 	
-	<h1>{{ test.title }}</h1>
+	<h1>Результаты теста {{ test_title }}</h1>
+	<p>Попытка №{{ attempt_count }}</p>
 	{{ answers }}
-	<p>Отвечено вопросов: из {{ q_num }}</p>
-	<p>Набранное кол-во баллов: из {{ sum }}</p>
-	<p>Попытка №{{ user.attempts }}</p>
+	<p>Отвечено вопросов: {{ answers|length }} из {{ q_count }}</p>
+	<p>Набранное кол-во баллов: из {{ p_sum }}</p>
 	{% if user_attempts < test.max_attempts %}
 		<p>У Вас осталось {{ test.max_attempts }} попыток для прохождения теста.</p>
 		<p>Вы хотите пройти тест еще раз?</p>

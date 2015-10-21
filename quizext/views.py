@@ -21,7 +21,7 @@ class TestDetail(DetailView):
 	def get_context_data(self, **kwargs):
 		context = super(TestDetail, self).get_context_data(**kwargs)
 		q = Question.objects.filter(test__pk=self.kwargs['pk'])
-		context['q_num'] = q.values('group').distinct().count()
+		context['q_count'] = q.values('group').distinct().count()
 		context['sum'] = q.aggregate(Sum('points')).values()[0]
 		context['time'] = Test.objects.filter(pk=self.kwargs['pk']).values_list('time', 
 			flat=True)[0]/3600
@@ -47,27 +47,46 @@ def question(request, pk, q_set):
 		else:
 			attempt = Attempt.objects.get(user=request.user, test__pk=pk, 
 				number=request.POST.get('attempt_count'))
-			ca = Answer.objects.filter(question__pk=request.POST.get('q_pk'), 
+			correct = Answer.objects.filter(question__pk=request.POST.get('q_pk'), 
 				is_correct=True).values_list('id', flat=True)
-			ra = request.POST.getlist('answer')
-			prev = int(q_set)-1
+			checked = request.POST.getlist('answer')
+			q_num = request.POST.get('q_pk')
+			points = 0
+			if map(int, correct) == map(int, checked):
+				points = Question.objects.get(pk=q_num).points
+			checked = [checked, points]
 			try:
 				answers = attempt.get_json()
 			except ValueError:
 				answers = {}
-			answers[prev] = ra
+			answers[q_num] = checked
 			attempt.set_json(answers)
 			attempt.save()
-			if map(int, ca) == map(int, ra):
-				response = True
-				c['response'] = response
 			c.update({'attempt_count': request.POST.get('attempt_count'), 'answers': answers})
 	return render(request, 'quizext/question.html', c)
 
 
 def results(request, pk):
+	q = Question.objects.filter(test__pk=pk)
+	q_count = q.values('group').distinct().count()
+	p_sum = q.aggregate(Sum('points')).values()[0]
 	attempt = Attempt.objects.get(user=request.user, test__pk=pk, 
 				number=request.POST.get('attempt_count'))
-	answers = attempt.get_json()
-	c = {'answers': answers,}
+	correct = Answer.objects.filter(question__pk=request.POST.get('q_pk'), 
+				is_correct=True).values_list('id', flat=True)
+	checked = request.POST.getlist('answer')
+	q_num = request.POST.get('q_pk')
+	points = 0
+	if map(int, correct) == map(int, checked):
+		points = Question.objects.get(pk=q_num).points
+	checked = [checked, points]
+	try:
+		answers = attempt.get_json()
+	except ValueError:
+		answers = {}
+	answers[q_num] = checked
+	attempt.set_json(answers)
+	attempt.save()
+	c = {'test_title': attempt.test.title, 'answers': answers, 'q_count': q_count, 'p_sum': p_sum, 
+		'attempt_count': request.POST.get('attempt_count')}
 	return render(request, 'quizext/results.html', c)
