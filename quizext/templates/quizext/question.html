@@ -7,11 +7,14 @@
 		<h3>Авторизован {{ user }}</h3>
 	{% endif %}
 	{{ answers }}
-	<p><em>Предыдущий вопрос: {{ response }}</em></p>
 	<p>Вопрос № {{ question.group }}</p>
 	<p>{{ question.content }}</p>
-		<form method="POST" action="{% url 'question' pk=question.test.pk q_set=next.group %}">
-	{% csrf_token %}
+	<form method="POST" action="
+		{% if next %}
+			{% url 'question' pk=question.test.pk q_set=next.group %}
+		{% else %}
+			{% url 'results' pk=question.test.pk %}
+		{% endif %}">{% csrf_token %}
 		<input type="hidden" name="q_pk" value="{{ question.id }}"/>
 		<input type="hidden" name="attempt_count" value="{{ attempt_count }}"/>
 		{% for ans in question.answer_set.all %}
@@ -19,8 +22,11 @@
 		{% endfor %}
 		<button class="btn" type="submit">Ответить</button>
 	</form>
-	<p>
-		<a href="{% url 'question' pk=question.test.pk q_set=next.group %}" class="btn">Пропустить</a>
-	</p>
+	<p><a href="
+		{% if next %}
+			{% url 'question' pk=question.test.pk q_set=next.group %}
+		{% else %}
+			{% url 'results' pk=question.test.pk %}
+		{% endif %}" class="btn">Пропустить</a></p>
 
 {% endblock %}

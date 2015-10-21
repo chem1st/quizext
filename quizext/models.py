@@ -52,6 +52,7 @@ class Attempt(models.Model):
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	number = models.PositiveIntegerField(u'Номер попытки')
 	answers = models.CharField(u'ответы', max_length=1000, blank=True)
+	points = models.PositiveIntegerField(u'Набранные баллы', blank=True, null=True)
 
 	def set_json(self, x):
 		self.answers = json.dumps(x)

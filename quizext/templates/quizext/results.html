@@ -7,7 +7,8 @@
 	<p>Попытка №{{ attempt_count }}</p>
 	{{ answers }}
 	<p>Отвечено вопросов: {{ answers|length }} из {{ q_count }}</p>
-	<p>Набранное кол-во баллов: из {{ p_sum }}</p>
+	<p>Набранное кол-во баллов: {{ user_points }} из {{ p_sum }}</p>
+	<p>Процент правильных ответов: {{ user_percent }}%</p>
 	{% if user_attempts < test.max_attempts %}
 		<p>У Вас осталось {{ test.max_attempts }} попыток для прохождения теста.</p>
 		<p>Вы хотите пройти тест еще раз?</p>
