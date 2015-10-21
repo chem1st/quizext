@@ -7,26 +7,40 @@
 		<h3>Авторизован {{ user }}</h3>
 	{% endif %}
 	{{ answers }}
-	<p>Вопрос № {{ question.group }}</p>
-	<p>{{ question.content }}</p>
-	<form method="POST" action="
-		{% if next %}
-			{% url 'question' pk=question.test.pk q_set=next.group %}
-		{% else %}
-			{% url 'results' pk=question.test.pk %}
-		{% endif %}">{% csrf_token %}
-		<input type="hidden" name="q_pk" value="{{ question.id }}"/>
-		<input type="hidden" name="attempt_count" value="{{ attempt_count }}"/>
-		{% for ans in question.answer_set.all %}
-			<p><input type="checkbox" name="answer" value="{{ ans.id }}"/>{{ ans.content }}</p>
-		{% endfor %}
-		<button class="btn" type="submit">Ответить</button>
-	</form>
+	<div id="form_container">
+		<form id="q_form" method="POST" action="{% url 'question' pk=question.test.pk q_set=next.group %}">{% csrf_token %}
+			<input type="hidden" name="q_pk" value="{{ question.id }}"/>
+			<input type="hidden" name="attempt_count" value="{{ attempt_count }}"/>
+			<p>Вопрос № {{ question.group }}</p>
+			<p>{{ question.content }}</p>
+			{% for ans in question.answer_set.all %}
+				<p><input type="checkbox" name="answer" value="{{ ans.id }}"/>{{ ans.content }}</p>
+			{% endfor %}
+			<button class="btn" type="submit">Ответить</button>
+		</form>
+	</div>
 	<p><a href="
 		{% if next %}
 			{% url 'question' pk=question.test.pk q_set=next.group %}
 		{% else %}
 			{% url 'results' pk=question.test.pk %}
 		{% endif %}" class="btn">Пропустить</a></p>
+
+
+	<script language="JavaScript">
+	    $(document).ready(function() {
+	        $('#q_form').submit(function() { // catch the form's submit event
+	            $.ajax({ // create an AJAX call...
+	                data: $(this).serialize(), // get the form data
+	                type: $(this).attr('method'), // GET or POST
+	                url: $(this).attr('action'), // the file to call
+	                success: function(question) { // on success..
+	                	$('#form_container').html(question); // update the DIV
+	                }
+	            });
+	            return false;
+	        });
+	    });
+	</script>
 
 {% endblock %}
