@@ -4,9 +4,8 @@
 {% block content %}
 	{{ answers }}
 	<div id="form_container">
-		<form id="q_form" method="POST" action="{% url 'question' pk=question.test.pk q_set=next %}">{% csrf_token %}
+		<form id="q_form" method="POST" action="{% url 'question' pk=question.test.pk q_set=next attempt_count=attempt_count %}">{% csrf_token %}
 			<input type="hidden" name="q_pk" value="{{ question.pk }}"/>
-			<input type="hidden" name="attempt_count" value="{{ attempt_count }}"/>
 			<p>Вопрос № {{ question.group }}</p>
 			<p>{{ question.content }}</p>
 			{% for ans in question.answer_set.all %}
@@ -16,21 +15,5 @@
 		</form>
 	</div>
 
-
-	<script language="JavaScript">
-	    $(document).ready(function() {
-	        $('#q_form').submit(function() { // catch the form's submit event
-	            $.ajax({ // create an AJAX call...
-	                data: $(this).serialize(), // get the form data
-	                type: $(this).attr('method'), // GET or POST
-	                url: $(this).attr('action'), // the file to call
-	                success: function(question) { // on success..
-	                	$('#form_container').html(question); // update the DIV
-	                }
-	            });
-	            return false;
-	        });
-	    });
-	</script>
 
 {% endblock %}
