@@ -1,7 +1,9 @@
 # encoding: UTF-8
 from django.db.models import Sum, Max
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView
+from django.core.urlresolvers import reverse
 from .models import Test, Question, Answer, Attempt
 from .forms import QuestionForm
 import json
@@ -34,50 +36,18 @@ class TestDetail(DetailView):
 			test__pk=self.kwargs['pk']).aggregate(Max('points')).values()[0]
 		return context
 
+def startquiz(request, pk):
+	attempt_count = Attempt.objects.filter(user=request.user, test__pk=pk).count() + 1
+	test = Test.objects.get(pk=pk)
+	attempt = Attempt(user=request.user, test=test, number=attempt_count)
+	attempt.save()
+	return HttpResponseRedirect(reverse('question', kwargs={'pk': pk, 'q_set': 1 }))
 
-def question(request, pk, q_set):
-	q = Question.objects.filter(test__pk=pk).filter(group=q_set).order_by('?').first()
-	next_q = Question.objects.filter(group__gt=q_set).order_by('group').first()
-	c = {'question': q, 'next': next_q}
+def question(request, pk, q_set, **kwargs):
 	if request.method == "POST":
-		if int(q_set) == 1:
-			attempt_count = Attempt.objects.filter(user=request.user, test__pk=pk).count() + 1
-			test = Test.objects.get(pk=pk)
-			attempt = Attempt(user=request.user, test=test, number=attempt_count)
-			attempt.save()
-			c['attempt_count'] = attempt_count
-		else:
-			attempt = Attempt.objects.get(user=request.user, test__pk=pk, 
-				number=request.POST.get('attempt_count'))
-			correct = Answer.objects.filter(question__pk=request.POST.get('q_pk'), 
-				is_correct=True).values_list('id', flat=True)
-			checked = request.POST.getlist('answer')
-			q_num = request.POST.get('q_pk')
-			points = 0
-			if map(int, correct) == map(int, checked):
-				points = Question.objects.get(pk=q_num).points
-			checked = [checked, points]
-			try:
-				answers = attempt.get_json()
-			except ValueError:
-				answers = {}
-			answers[q_num] = checked
-			attempt.set_json(answers)
-			attempt.save()
-			c.update({'attempt_count': request.POST.get('attempt_count'), 'answers': answers})
-	return render(request, 'quizext/question.html', c)
-
-
-def results(request, pk):
-	c = {}
-	if request.method == "POST":
-		q = Question.objects.filter(test__pk=pk)
-		q_count = q.values('group').distinct().count()
-		p_sum = q.aggregate(Sum('points')).values()[0]
-		attempt = Attempt.objects.get(user=request.user, test__pk=pk, 
-					number=request.POST.get('attempt_count'))
+		attempt = Attempt.objects.get(user=request.user, test__pk=pk, number=kwargs['attempt_count'])
 		correct = Answer.objects.filter(question__pk=request.POST.get('q_pk'), 
-					is_correct=True).values_list('id', flat=True)
+			is_correct=True).values_list('id', flat=True)
 		checked = request.POST.getlist('answer')
 		q_num = request.POST.get('q_pk')
 		points = 0
@@ -89,13 +59,38 @@ def results(request, pk):
 		except ValueError:
 			answers = {}
 		answers[q_num] = checked
+		attempt.set_json(answers)
+		attempt.save()
+		if int(q_set) == 0:
+			return HttpResponseRedirect(reverse('results', kwargs={'pk': pk}))
+		c = {'question': q, 'next': next_q_set, 'attempt_count': request.POST.get('attempt_count'), 'answers': answers}
+	q = Question.objects.filter(test__pk=pk).filter(group=q_set).order_by('?').first()
+	try:
+		next_q_set = Question.objects.filter(group__gt=q_set).order_by('group').first().group
+	except:
+		next_q_set = 0
+	c = {'question': q, 'next': next_q_set }
+	return render(request, 'quizext/question.html', c)
+
+
+def results(request, pk, attempt_count):
+	c = {}
+	if request.method == "POST":
+		attempt = Attempt.objects.get(user=request.user, test__pk=pk, number=attempt_count)
+		q = Question.objects.filter(test__pk=pk)
+		q_count = q.values('group').distinct().count()
+		p_sum = q.aggregate(Sum('points')).values()[0]
 		user_points = 0
-		for k,kv in answers.iteritems():
-			user_points += kv[1]
+		try:
+			answers = attempt.get_json()
+			for k,kv in answers.iteritems():
+				user_points += kv[1]
+		except ValueError:
+			pass
 		attempt.points = user_points
 		attempt.set_json(answers)
 		attempt.save()
 		user_percent = attempt.points / p_sum * 100
-		c = {'test_title': attempt.test.title, 'answers': answers, 'q_count': q_count, 'p_sum': p_sum, 
-			'attempt_count': request.POST.get('attempt_count'), 'user_points': user_points, 'user_percent': user_percent}
+		c = {'test_title': attempt.test.title, 'answers': answers, 'q_count': q_count, 'p_sum': p_sum, 'user_points': user_points, 
+			'user_percent': user_percent}
 	return render(request, 'quizext/results.html', c)

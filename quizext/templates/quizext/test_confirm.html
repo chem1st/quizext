@@ -15,7 +15,7 @@
 	{% if user_attempts < test.max_attempts %}
 		<p>У Вас осталось {{ delta_attempts }} попыток для прохождения теста.</p>
 		<p>Вы хотите пройти тест?</p>
-		<form method="POST" action="{% url 'question' pk=test.pk q_set=1 %}">{% csrf_token %}
+		<form method="POST" action="{% url 'startquiz' pk=test.pk %}">{% csrf_token %}
 			<button class="btn">Да, хочу пройти</button>
 		</form>
 	{% else %}
