@@ -1,6 +1,7 @@
 # encoding: UTF-8
 from django.db import models
 from django.contrib.auth.models import User
+import datetime
 import json
 
 
@@ -53,6 +54,12 @@ class Attempt(models.Model):
 	number = models.PositiveIntegerField(u'Номер попытки')
 	answers = models.CharField(u'ответы', max_length=1000, blank=True)
 	points = models.PositiveIntegerField(u'Набранные баллы', blank=True, null=True)
+	starttime = models.DateTimeField(auto_now_add=True, null=True)
+	endtime = models.DateTimeField(blank=True, null=True)
+	timetill = models.DateTimeField(blank=True, null=True)
+
+	def __unicode__(self):
+		return u"%s - %s (попытка №%s)" % (self.test.title, self.user.username, self.number)
 
 	def set_json(self, x):
 		self.answers = json.dumps(x)
@@ -60,5 +67,7 @@ class Attempt(models.Model):
 	def get_json(self):
 		return json.loads(self.answers)
 
-	def __unicode__(self):
-		return u"%s - %s (попытка №%s)" % (self.test.title, self.user.username, self.number)
+	def save(self, *args, **kwargs):
+		if not self.id:
+			self.timetill = datetime.datetime.now() + datetime.timedelta(seconds=self.test.time)
+		return super(Attempt, self).save(*args, **kwargs)

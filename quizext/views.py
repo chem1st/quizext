@@ -75,7 +75,6 @@ def question(request, pk, q_set, attempt_count):
 
 def results(request, pk, attempt_count):
 	attempt = Attempt.objects.get(user=request.user, test__pk=pk, number=attempt_count)
-	print attempt
 	q = Question.objects.filter(test__pk=pk)
 	q_count = q.values('group').distinct().count()
 	p_sum = q.aggregate(Sum('points')).values()[0]
@@ -89,7 +88,7 @@ def results(request, pk, attempt_count):
 	attempt.points = user_points
 	attempt.set_json(answers)
 	attempt.save()
-	user_percent = attempt.points / p_sum * 100
+	user_percent = int(user_points) / int(p_sum) * 100
 	c = {'test_title': attempt.test.title, 'answers': answers, 'q_count': q_count, 'p_sum': p_sum, 'user_points': user_points, 
 		'user_percent': user_percent}
 	return render(request, 'quizext/results.html', c)
