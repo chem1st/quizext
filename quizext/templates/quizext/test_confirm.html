@@ -7,19 +7,23 @@
 	<h1>{{ test.title }}</h1>
 	<p>Количество вопросов: {{ q_count }}</p>
 	<p>Время на выполнение всех заданий: {{ time }} ч.</p>
-	{% if test.max_attempts == 1 %}
-		<p>Внимание!!! Данный тест можно пройти только один раз!</p>
-	{% endif %}
-	<p>Вы проходили данный тест {{ user_attempts }} раз</p>
-	<p>Набранное кол-во баллов: {{ user_max_points }} / {{ sum }}</p>
-	{% if user_attempts < test.max_attempts %}
-		<p>У Вас осталось {{ delta_attempts }} попыток для прохождения теста.</p>
-		<p>Вы хотите пройти тест?</p>
-		<form method="POST" action="{% url 'startquiz' pk=test.pk %}">{% csrf_token %}
-			<button class="btn">Да, хочу пройти</button>
-		</form>
+	<p>Вы проходили данный тест {{ user_attempts }} раз:</p>
+	{% if active_attempt %}
+		<p>В данный момент у Вас имеется активная попытка.
+			<a href="{% url 'question' pk=test.pk attempt_count=active_attempt.number %}">Продолжить</a>
+		</p>
 	{% else %}
-		<p>У Вас не осталось попыток!</p>
+		{% if test.max_attempts == 1 %}
+			<p>Внимание!!! Данный тест можно пройти только один раз!</p>
+		{% endif %}
+		{% if delta_attempts %}
+			<p>У Вас осталось {{ delta_attempts }} попыток для прохождения теста.</p>
+			<p>Вы хотите пройти тест?</p>
+			<form method="POST" action="{% url 'startquiz' pk=test.pk %}">{% csrf_token %}
+				<button class="btn">Да, хочу пройти</button>
+			</form>
+		{% else %}
+			<p>У Вас не осталось попыток!</p>
+		{% endif %}
 	{% endif %}
-
 {% endblock %}

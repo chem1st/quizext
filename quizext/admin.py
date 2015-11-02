@@ -10,7 +10,7 @@ class AnswerInline(admin.StackedInline):
 	model = Answer
 
 class QuestionAdmin(admin.ModelAdmin):
-	list_display = ['__unicode__', 'test', 'group']
+	list_display = ['__unicode__', 'test', 'group', 'id']
 	list_filter = ['test', 'group']
 	inlines = [
 		AnswerInline,

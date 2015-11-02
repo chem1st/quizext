@@ -1,5 +1,6 @@
 # encoding: UTF-8
 from django.db import models
+from django.db.models import Sum
 from django.contrib.auth.models import User
 import datetime
 import json
@@ -21,12 +22,22 @@ class Test(models.Model):
 	def __unicode__(self):
 		return self.title
 
+	def count_questions(self):
+		return self.question_set.values('group').distinct().count()
+
+	def max_points(self):
+		return self.question_set.aggregate(Sum('points')).values()[0]
+
+	def time_limit(self):
+		return self.time/3600
+
 
 class Question(models.Model):
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	content = models.TextField(u"Текст вопроса")
 	group = models.PositiveIntegerField(u"Серия")
 	points = models.PositiveIntegerField(u'Баллы')
+	answer = models.CharField(u'Ответ', max_length=1024, blank=True)
 
 	class Meta:
 		verbose_name = "Вопрос"
@@ -38,7 +49,7 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
-	question = models.ForeignKey(Question)
+	question = models.ForeignKey(Question, related_name='answers')
 	content = models.CharField(u"Текст ответа", max_length=300)
 	is_correct = models.BooleanField(u"Верно")
 
@@ -54,10 +65,12 @@ class Attempt(models.Model):
 	user = models.ForeignKey(User, verbose_name="Пользователь")
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	number = models.PositiveIntegerField(u'Номер попытки')
-	question_list = CharField(max_length=1000)
-	answers = models.CharField(u'ответы', max_length=1000, blank=True)
-	points = models.PositiveIntegerField(u'Набранные баллы', blank=True, null=True)
+	question_list = models.CharField(max_length=1024, blank=True)
+	answers = models.CharField(u'ответы', max_length=1024, blank=True)
+	current_q = models.PositiveIntegerField(u'Текущий вопрос', blank=True)
+	points = models.PositiveIntegerField(u'Набранные баллы', default=0)
 	starttime = models.DateTimeField(auto_now_add=True, null=True)
+	is_active = models.BooleanField(default=False)
 	endtime = models.DateTimeField(blank=True, null=True)
 	timetill = models.DateTimeField(blank=True, null=True)
 
@@ -70,7 +83,39 @@ class Attempt(models.Model):
 	def get_json(self):
 		return json.loads(self.answers)
 
+	def current_question(self):
+		question_list = json.loads(self.question_list)
+		question_id = question_list[self.current_q-1]
+		return Question.objects.get(id=question_id)
+
+	def get_first_question(self):
+		if not self.question_list:
+			return False
+
+		first, _ = self.question_list.split(',', 1)
+		question_id = int(first)
+		return Question.objects.get(id=question_id)
+
+	def add_to_score(self, points):
+		self.points += int(points)
+		self.save()
+
+	def close(self):
+		self.is_active=False
+		self.endtime = datetime.datetime.now()
+		self.save()
+
 	def save(self, *args, **kwargs):
 		if not self.id:
+			self.is_active=True
 			self.timetill = datetime.datetime.now() + datetime.timedelta(seconds=self.test.time)
+			question_list = []
+			current_test_q = Question.objects.filter(test__pk=self.test.pk)
+			group_overall = current_test_q.values('group').distinct().count() + 1
+			for q_set in range(1, group_overall):
+				q = current_test_q.filter(group=q_set).order_by('?').first()
+				question_list.append(q.id)
+			self.question_list = json.dumps(question_list)
+			self.current_q = 1
+
 		return super(Attempt, self).save(*args, **kwargs)

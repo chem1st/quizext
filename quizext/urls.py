@@ -21,6 +21,6 @@ urlpatterns = [
     url(r'^tests/$', TestList.as_view(), name='tests'),
     url(r'^tests/(?P<pk>[0-9]+)/$', TestDetail.as_view(), name='test_confirm'),
     url(r'^tests/(?P<pk>[0-9]+)/start/$', startquiz, name='startquiz'),
-    url(r'^tests/(?P<pk>[0-9]+)/attempt/(?P<attempt_count>[0-9]+)/question/(?P<q_set>[0-9]+)/$', question, name='question'),
+    url(r'^tests/(?P<pk>[0-9]+)/attempt/(?P<attempt_count>[0-9]+)/question/$', question, name='question'),
     url(r'^tests/(?P<pk>[0-9]+)/attempt/(?P<attempt_count>[0-9]+)/results/$', results, name='results')
 ]

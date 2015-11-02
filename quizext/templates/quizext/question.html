@@ -4,13 +4,10 @@
 {% block content %}
 	{{ answers }}
 	<div id="form_container">
-		<form id="q_form" method="POST" action="{% url 'question' pk=question.test.pk q_set=next attempt_count=attempt_count %}">{% csrf_token %}
-			<input type="hidden" name="q_pk" value="{{ question.pk }}"/>
+		<form id="q_form" method="POST" action="{% url 'question' pk=question.test.pk attempt_count=attempt_count %}">{% csrf_token %}
 			<p>Вопрос № {{ question.group }}</p>
 			<p>{{ question.content }}</p>
-			{% for ans in question.answer_set.all %}
-				<p><input type="checkbox" name="answer" value="{{ ans.pk }}"/>{{ ans.content }}</p>
-			{% endfor %}
+			{{ form }}
 			<button class="btn" type="submit">Ответить</button>
 		</form>
 	</div>
