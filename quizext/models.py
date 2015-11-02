@@ -11,13 +11,15 @@ class Test(models.Model):
 	user = models.ManyToManyField(User, through='Attempt')
 	max_attempts = models.PositiveIntegerField(u'Кол-во попыток', blank=True)
 	time = models.FloatField(u'Продолжительность, сек', blank=True)
-
-	def __unicode__(self):
-		return self.title
+	success_text = models.TextField(u"Текст в случае прохождения", blank=True)
+	fail_text = models.TextField(u"Текст в случае провала", blank=True)
 
 	class Meta:
 		verbose_name = "Тест"
 		verbose_name_plural = "Тесты"
+
+	def __unicode__(self):
+		return self.title
 
 
 class Question(models.Model):
@@ -26,13 +28,13 @@ class Question(models.Model):
 	group = models.PositiveIntegerField(u"Серия")
 	points = models.PositiveIntegerField(u'Баллы')
 
-	def __unicode__(self):
-		return self.content[:47] + '...' if len(self.content) > 50 else self.content
-
 	class Meta:
 		verbose_name = "Вопрос"
 		verbose_name_plural = "Вопросы"
 		ordering = ['group', 'id']
+
+	def __unicode__(self):
+		return self.content[:47] + '...' if len(self.content) > 50 else self.content
 
 
 class Answer(models.Model):
@@ -40,18 +42,19 @@ class Answer(models.Model):
 	content = models.CharField(u"Текст ответа", max_length=300)
 	is_correct = models.BooleanField(u"Верно")
 
-	def __unicode__(self):
-		return self.content[:27] + '...' if len(self.content) > 30 else self.content
-
 	class Meta:
 		verbose_name = "Вариант ответа"
 		verbose_name_plural = "Варианты ответов"
+
+	def __unicode__(self):
+		return self.content[:27] + '...' if len(self.content) > 30 else self.content
 
 
 class Attempt(models.Model):
 	user = models.ForeignKey(User, verbose_name="Пользователь")
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	number = models.PositiveIntegerField(u'Номер попытки')
+	question_list = CharField(max_length=1000)
 	answers = models.CharField(u'ответы', max_length=1000, blank=True)
 	points = models.PositiveIntegerField(u'Набранные баллы', blank=True, null=True)
 	starttime = models.DateTimeField(auto_now_add=True, null=True)
