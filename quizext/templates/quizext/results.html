@@ -3,18 +3,11 @@
 
 {% block content %}
 	
-	<h1>Результаты теста {{ test_title }}</h1>
-	<p>Попытка №{{ attempt_count }}</p>
-	{{ answers }}
-	<p>Отвечено вопросов: {{ answers|length }} из {{ q_count }}</p>
-	<p>Набранное кол-во баллов: {{ user_points }} из {{ p_sum }}</p>
-	<p>Процент правильных ответов: {{ user_percent }}%</p>
-	{% if user_attempts < test.max_attempts %}
-		<p>У Вас осталось {{ test.max_attempts }} попыток для прохождения теста.</p>
-		<p>Вы хотите пройти тест еще раз?</p>
-		<a href="{% url 'question' pk=test.pk q_set=1 %}" class="btn">Да, хочу пройти.</a>
-	{% else %}
-		<p>Спасибо за прохождение теста!</p>
-	{% endif %}
+	<h1>Результаты теста {{ test.title }}</h1>
+	<p>Попытка №{{ attempt.number }}</p>
+	<p>Отвечено вопросов: {{ answered }} из {{ q_count }}</p>
+	<p>Набранное кол-во баллов: {{ attempt.points }} из {{ p_sum }}</p>
+	<p>Рейтинг: {{ rating }}%</p>
+	<p><a href="{% url 'test_confirm' test.pk %}">На страницу теста</a></p>
 
 {% endblock %}

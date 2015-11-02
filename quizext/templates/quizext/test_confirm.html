@@ -8,6 +8,15 @@
 	<p>Количество вопросов: {{ q_count }}</p>
 	<p>Время на выполнение всех заданий: {{ time }} ч.</p>
 	<p>Вы проходили данный тест {{ user_attempts }} раз:</p>
+	<ul>
+		{% for attempt in attempts_loop %}
+			<li>
+				<a href="{% url 'results' pk=test.pk attempt_count=forloop.counter %}">
+					Попытка №{{ forloop.counter }} - Результаты.		
+				</a>
+			</li>
+		{% endfor %}
+	</ul>
 	{% if active_attempt %}
 		<p>В данный момент у Вас имеется активная попытка.
 			<a href="{% url 'question' pk=test.pk attempt_count=active_attempt.number %}">Продолжить</a>

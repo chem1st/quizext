@@ -1,4 +1,5 @@
 # encoding: UTF-8
+from __future__ import division
 from django.db.models import Max, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -29,6 +30,7 @@ class TestDetail(DetailView):
 		context['sum'] = test.max_points()
 		context['time'] = test.time_limit()
 		user_attempts = attempts.count()
+		context['attempts_loop'] = range(0, user_attempts)
 		max_attempts = test.max_attempts
 		try:
 			context['active_attempt'] = attempts.get(is_active=True)
@@ -60,15 +62,15 @@ def question(request, pk, attempt_count):
 				is_correct=True).values_list('id', flat=True)
 			checked = [answer.pk for answer in form.cleaned_data['answer']]
 			if map(int, correct) == map(int, checked):
-				attempt.points += Question.objects.get(pk=q.id).points
-			try:
-				answers = attempt.get_json()
-			except ValueError:
-				answers = {}
+				attempt.add_points(q.points)
+			answers = attempt.get_json()
 			answers[q.id] = checked
 			attempt.set_json(answers)
 			attempt.current_q += 1
 			attempt.save()
+		else:
+			c = {'question': q, 'form': form, 'attempt_count': attempt_count}
+			return render(request, 'quizext/question.html', c)
 	try:
 		q = Attempt.objects.get(
 			user=request.user, test__pk=pk, number=attempt_count).current_question()
@@ -82,11 +84,11 @@ def question(request, pk, attempt_count):
 
 def results(request, pk, attempt_count):
 	attempt = Attempt.objects.get(user=request.user, test__pk=pk, number=attempt_count)
-	q = Question.objects.filter(test__pk=pk)
-	q_count = q.values('group').distinct().count()
-	p_sum = q.aggregate(Sum('points')).values()[0]
-	attempt.save()
-	user_percent = int(attempt.points) / int(p_sum) * 100
-	c = {'test_title': attempt.test.title, 'q_count': q_count, 
-		'p_sum': p_sum, 'user_points': attempt.points, 'user_percent': user_percent}
+	test = Test.objects.get(pk=pk)
+	q_count = test.count_questions()
+	answered = attempt.count_answered()
+	p_sum = test.max_points()
+	rating = round(attempt.points / p_sum * 100, 2)
+	c = {'attempt': attempt, 'test': test, 'q_count': q_count, 'answered': answered, 
+		'p_sum': p_sum, 'rating': rating}
 	return render(request, 'quizext/results.html', c)

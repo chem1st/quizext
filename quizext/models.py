@@ -26,7 +26,7 @@ class Test(models.Model):
 		return self.question_set.values('group').distinct().count()
 
 	def max_points(self):
-		return self.question_set.aggregate(Sum('points')).values()[0]
+		return self.question_set.values('group').distinct().aggregate(Sum('points')).values()[0]
 
 	def time_limit(self):
 		return self.time/3600
@@ -65,7 +65,10 @@ class Attempt(models.Model):
 	user = models.ForeignKey(User, verbose_name="Пользователь")
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	number = models.PositiveIntegerField(u'Номер попытки')
+	lap = models.PositiveIntegerField(u'Круг', default=1)
+	max_laps = models.PositiveIntegerField(u'Макс. количество кругов', default=1)
 	question_list = models.CharField(max_length=1024, blank=True)
+	skipped_list = models.CharField(max_length=1024, blank=True)
 	answers = models.CharField(u'ответы', max_length=1024, blank=True)
 	current_q = models.PositiveIntegerField(u'Текущий вопрос', blank=True)
 	points = models.PositiveIntegerField(u'Набранные баллы', default=0)
@@ -81,24 +84,26 @@ class Attempt(models.Model):
 		self.answers = json.dumps(x)
 
 	def get_json(self):
-		return json.loads(self.answers)
+		try: 
+			return json.loads(self.answers)
+		except:
+			return {}
 
 	def current_question(self):
 		question_list = json.loads(self.question_list)
 		question_id = question_list[self.current_q-1]
 		return Question.objects.get(id=question_id)
 
-	def get_first_question(self):
-		if not self.question_list:
-			return False
+	def count_answered(self):
+		answers = self.get_json()
+		answered = 0
+		for k in answers.keys():
+			if answers[k]:
+				answered += 1
+		return answered 
 
-		first, _ = self.question_list.split(',', 1)
-		question_id = int(first)
-		return Question.objects.get(id=question_id)
-
-	def add_to_score(self, points):
+	def add_points(self, points):
 		self.points += int(points)
-		self.save()
 
 	def close(self):
 		self.is_active=False
