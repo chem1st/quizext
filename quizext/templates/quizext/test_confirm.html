@@ -22,12 +22,9 @@
 			<a href="{% url 'question' pk=test.pk attempt_count=active_attempt.number %}">Продолжить</a>
 		</p>
 	{% else %}
-		{% if test.max_attempts == 1 %}
-			<p>Внимание!!! Данный тест можно пройти только один раз!</p>
-		{% endif %}
 		{% if delta_attempts %}
 			<p>У Вас осталось {{ delta_attempts }} попыток для прохождения теста.</p>
-			<p>Вы хотите пройти тест?</p>
+			<p>Хотите пройти тест?</p>
 			<form method="POST" action="{% url 'startquiz' pk=test.pk %}">{% csrf_token %}
 				<button class="btn">Да, хочу пройти</button>
 			</form>

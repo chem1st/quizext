@@ -1,7 +1,7 @@
 # encoding: UTF-8
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum
-from django.contrib.auth.models import User
 import datetime
 import json
 
@@ -11,6 +11,7 @@ class Test(models.Model):
 	description = models.TextField(u"Описание", blank=True)
 	user = models.ManyToManyField(User, through='Attempt')
 	max_attempts = models.PositiveIntegerField(u'Кол-во попыток', blank=True)
+	max_laps = models.PositiveIntegerField(u'Макс. количество кругов', default=1)
 	time = models.FloatField(u'Продолжительность, сек', blank=True)
 	success_text = models.TextField(u"Текст в случае прохождения", blank=True)
 	fail_text = models.TextField(u"Текст в случае провала", blank=True)
@@ -37,7 +38,8 @@ class Question(models.Model):
 	content = models.TextField(u"Текст вопроса")
 	group = models.PositiveIntegerField(u"Серия")
 	points = models.PositiveIntegerField(u'Баллы')
-	answer = models.CharField(u'Ответ', max_length=1024, blank=True)
+	img = models.ImageField(blank=False)
+	is_free = models.BooleanField(u'Свободный ответ', default=False)
 
 	class Meta:
 		verbose_name = "Вопрос"
@@ -51,14 +53,14 @@ class Question(models.Model):
 class Answer(models.Model):
 	question = models.ForeignKey(Question, related_name='answers')
 	content = models.CharField(u"Текст ответа", max_length=300)
-	is_correct = models.BooleanField(u"Верно")
+	is_correct = models.BooleanField(u"Верно", default=False)
 
 	class Meta:
 		verbose_name = "Вариант ответа"
 		verbose_name_plural = "Варианты ответов"
 
 	def __unicode__(self):
-		return self.content[:27] + '...' if len(self.content) > 30 else self.content
+		return self.content
 
 
 class Attempt(models.Model):
@@ -66,7 +68,6 @@ class Attempt(models.Model):
 	test = models.ForeignKey(Test, verbose_name="Тест")
 	number = models.PositiveIntegerField(u'Номер попытки')
 	lap = models.PositiveIntegerField(u'Круг', default=1)
-	max_laps = models.PositiveIntegerField(u'Макс. количество кругов', default=1)
 	question_list = models.CharField(max_length=1024, blank=True)
 	skipped_list = models.CharField(max_length=1024, blank=True)
 	answers = models.CharField(u'ответы', max_length=1024, blank=True)
@@ -84,15 +85,61 @@ class Attempt(models.Model):
 		self.answers = json.dumps(x)
 
 	def get_json(self):
-		try: 
+		try:
 			return json.loads(self.answers)
 		except:
 			return {}
 
 	def current_question(self):
-		question_list = json.loads(self.question_list)
+		if self.lap < 2:
+			question_list = json.loads(self.question_list)
+		else:
+			question_list = json.loads(self.skipped_list)
 		question_id = question_list[self.current_q-1]
 		return Question.objects.get(id=question_id)
+
+	def next_question(self):
+		self.current_q += 1
+		self.save()
+
+	def add_skipped_question(self):
+		try:
+			skipped_list = json.loads(self.skipped_list)
+		except:
+			skipped_list = []
+		q = self.current_question()
+		if not q.id in skipped_list:
+			skipped_list.append(q.id)
+			self.skipped_list = json.dumps(skipped_list)
+
+	def rm_skipped_question(self, q):
+		try:
+			skipped_list = json.loads(self.skipped_list)
+			if q.id in skipped_list:
+				skipped_list.remove(q.id)
+				self.skipped_list = json.dumps(skipped_list)
+				self.current_q -= 1
+		except:
+			pass
+
+	def add_answered_question(self, answered):
+		q = self.current_question()
+		self.rm_skipped_question(q)
+		answers = self.get_json()
+		if q.is_free:
+			correct = Answer.objects.get(question__id=q.id, 
+				is_correct=True).content
+			if int(correct) == int(answered):
+				self.points += int(q.points)
+			answers[q.id] = ['f', answered]
+		else:	
+			correct = Answer.objects.filter(question__id=q.id, 
+				is_correct=True).values_list('id', flat=True)
+			answered = [answer.pk for answer in answered]
+			if map(int, correct) == map(int, answered):
+				self.points += int(q.points)
+			answers[q.id] = answered
+		self.set_json(answers)
 
 	def count_answered(self):
 		answers = self.get_json()
@@ -102,13 +149,23 @@ class Attempt(models.Model):
 				answered += 1
 		return answered 
 
-	def add_points(self, points):
-		self.points += int(points)
-
 	def close(self):
 		self.is_active=False
 		self.endtime = datetime.datetime.now()
 		self.save()
+
+	def next_lap(self):
+		try:
+			skipped_list = json.loads(self.skipped_list)
+		except:
+			return False
+		if self.lap < self.test.max_laps and skipped_list:
+			self.lap += 1
+			self.current_q = 1
+			self.save()
+			return self.current_question()
+		else:
+			return False
 
 	def save(self, *args, **kwargs):
 		if not self.id:

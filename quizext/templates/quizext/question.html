@@ -1,16 +1,48 @@
 {% extends 'quizext/quizext_base.html' %}
+{% load staticfiles %}
 
 
 {% block content %}
-	{{ answers }}
 	<div id="form_container">
 		<form id="q_form" method="POST" action="{% url 'question' pk=question.test.pk attempt_count=attempt_count %}">{% csrf_token %}
 			<p>Вопрос № {{ question.group }}</p>
 			<p>{{ question.content }}</p>
+			<img src="{{ question.img.url }}" alt="Изображение для вопроса №{{ question.group }}">
 			{{ form }}
 			<button class="btn" type="submit">Ответить</button>
 		</form>
+		<form id="skip_form" method="POST" action="{% url 'question' pk=question.test.pk attempt_count=attempt_count %}">{% csrf_token %}
+			<input type="hidden" name='skip' value='True' >
+			<button class="btn" type="submit">Пропустить</button>
+		</form>
 	</div>
+	
+	<div id="countdown"></div>
 
+	<script type="text/javascript">
+		$("#countdown")
+		.countdown('{{ timetill|date:"Y/m/d H:i:s" }}')
+		.on('update.countdown', function(event) {
+			$(this).text(
+				event.strftime('%H:%M:%S')
+			);
+		})
+	    .on('finish.countdown', function(){
+			$.ajax({
+	            type: 'POST',
+	            url: '{% url "close" pk=question.test.pk attempt_count=attempt_count %}',
+				data:  {csrfmiddlewaretoken:'{{csrf_token}}' },
+	            success: function() {
+	                alert("Время вышло!");
+	                window.location.replace("{% url 'results' pk=question.test.pk attempt_count=attempt_count %}");
+	            },
+	            error: function(xhr, status, error){
+	            	alert(error);
+	            }
+	        });
+		});
+	</script>
+
+<script src="{% static 'quizext/js/preventback.js' %}"></script>
 
 {% endblock %}

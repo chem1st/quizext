@@ -58,3 +58,6 @@ target/
 
 # Project files & folders
 media/
+core/
+templates/
+!quizext/templates/

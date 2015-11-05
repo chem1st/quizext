@@ -1,13 +1,12 @@
 # encoding: UTF-8
 from __future__ import division
+from django.core.urlresolvers import reverse
 from django.db.models import Max, Sum
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView
-from django.core.urlresolvers import reverse
 from .models import Test, Question, Answer, Attempt
-from .forms import AnswerForm
-import json
+from .forms import IntegerAnswerForm, MultipleChoiceAnswerForm
 
 
 class TestList(ListView):
@@ -53,33 +52,47 @@ def startquiz(request, pk):
 
 def question(request, pk, attempt_count):
 	attempt = Attempt.objects.get(user=request.user, test__pk=pk, number=attempt_count)
+	if attempt.endtime:
+		return HttpResponseRedirect(reverse('results', 
+			kwargs={'pk': pk, 'attempt_count': attempt_count }))
 	if request.method == "POST":
-		q = Attempt.objects.get(
-			user=request.user, test__pk=pk, number=attempt_count).current_question()
-		form = AnswerForm(request.POST, q_pk=q.id)
-		if form.is_valid():
-			correct = Answer.objects.filter(question__pk=q.id, 
-				is_correct=True).values_list('id', flat=True)
-			checked = [answer.pk for answer in form.cleaned_data['answer']]
-			if map(int, correct) == map(int, checked):
-				attempt.add_points(q.points)
-			answers = attempt.get_json()
-			answers[q.id] = checked
-			attempt.set_json(answers)
-			attempt.current_q += 1
-			attempt.save()
+		q = attempt.current_question()
+		if q.is_free:
+			form = IntegerAnswerForm(request.POST)
 		else:
-			c = {'question': q, 'form': form, 'attempt_count': attempt_count}
-			return render(request, 'quizext/question.html', c)
+			form = MultipleChoiceAnswerForm(request.POST, q_pk=q.id)
+		if form.is_valid():
+			attempt.add_answered_question(form.cleaned_data['answer'])
+		else:
+			if request.POST.get("skip"):
+				attempt.add_skipped_question()
+			else:
+				c = {'question': q, 'form': form, 'attempt_count': attempt_count, 
+					'timetill': attempt.timetill }
+				return render(request, 'quizext/question.html', c)
+		attempt.next_question()
 	try:
-		q = Attempt.objects.get(
-			user=request.user, test__pk=pk, number=attempt_count).current_question()
+		q = attempt.current_question()
 	except IndexError:
-		attempt.close()
-		return HttpResponseRedirect(reverse('results', kwargs={'pk': pk, 'attempt_count': attempt_count}))
-	form = AnswerForm(q_pk=q.id)
-	c = {'question': q, 'form': form, 'attempt_count': attempt_count}
+		q = attempt.next_lap()
+		if not q:
+			attempt.close()
+			return HttpResponseRedirect(reverse('results', 
+				kwargs={'pk': pk, 'attempt_count': attempt_count }))
+	if q.is_free:
+		form = IntegerAnswerForm()
+	else:
+		form = MultipleChoiceAnswerForm(q_pk=q.id)
+	c = {'question': q, 'form': form, 'attempt_count': attempt_count, 'timetill': attempt.timetill }
 	return render(request, 'quizext/question.html', c)
+
+
+def close(request, pk, attempt_count):
+	if request.method == "POST":
+		attempt = Attempt.objects.get(user=request.user, test__pk=pk, number=attempt_count)
+		if attempt.is_active:
+			attempt.close()
+	return HttpResponse(status=200)
 
 
 def results(request, pk, attempt_count):

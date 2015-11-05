@@ -16,15 +16,15 @@ class QuestionAdmin(admin.ModelAdmin):
 		AnswerInline,
 	]
 
-class QuestionInline(admin.StackedInline):
-	model = Question
+# class QuestionInline(admin.StackedInline):
+# 	model = Question
 
-class TestAdmin(admin.ModelAdmin):
-	inlines = [
-		QuestionInline,
-	]
+# class TestAdmin(admin.ModelAdmin):
+# 	inlines = [
+# 		QuestionInline,
+# 	]
 
-admin.site.register(Test, TestAdmin)
+admin.site.register(Test)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(Answer, HideModel)
 admin.site.register(Attempt)
